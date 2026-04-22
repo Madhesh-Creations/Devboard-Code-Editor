@@ -1013,7 +1013,8 @@ body {
 
     <div class="modal-field">
       <label class="modal-label">Your Name</label>
-      <input class="modal-input" id="modal-name" placeholder="e.g. Arjun" maxlength="20"/>
+      <input class="modal-input" id="modal-name" placeholder="e.g. Arjun" maxlength="20" autofocus
+        onkeydown="if(event.key==='Enter') createRoom()"/>
     </div>
 
     <div class="modal-btns">
@@ -1023,7 +1024,8 @@ body {
     <div class="or-divider">or join existing</div>
 
     <div style="display:flex;gap:8px">
-      <input class="modal-input" id="modal-room" placeholder="Enter Room ID (e.g. DEVX-4829)" style="flex:1"/>
+      <input class="modal-input" id="modal-room" placeholder="Enter Room ID (e.g. DEV-X4K2)" style="flex:1"
+        onkeydown="if(event.key==='Enter') joinRoom()"/>
       <button class="btn-modal-secondary" onclick="joinRoom()">Join →</button>
     </div>
   </div>
@@ -1329,19 +1331,26 @@ function stopSync() {
 // ROOM MANAGEMENT
 // ══════════════════════════════════════════
 function createRoom() {
-  const name = document.getElementById('modal-name').value.trim() || 'Anonymous';
+  const nameEl = document.getElementById('modal-name');
+  const name = (nameEl.value || '').trim() || 'Anonymous';
   state.userName = name;
   state.roomId = 'DEV-' + generateId(4);
   initRoom();
 }
 
 function joinRoom() {
-  const name = document.getElementById('modal-name').value.trim() || 'Anonymous';
-  const rid = document.getElementById('modal-room').value.trim().toUpperCase();
-  if (!rid) { showToast('Enter a Room ID first'); return; }
+  const nameEl = document.getElementById('modal-name');
+  const roomEl = document.getElementById('modal-room');
+  const name = (nameEl.value || '').trim() || 'Anonymous';
+  const rid = (roomEl.value || '').trim().toUpperCase();
+  if (!rid) {
+    roomEl.style.borderColor = 'var(--accent2)';
+    roomEl.placeholder = 'Please enter a Room ID!';
+    setTimeout(() => { roomEl.style.borderColor = ''; roomEl.placeholder = 'Enter Room ID (e.g. DEV-X4K2)'; }, 2000);
+    return;
+  }
   state.userName = name;
   state.roomId = rid;
-  // Load existing room files
   const data = getRoomData();
   if (data.files && data.files.length) state.files = data.files;
   if (data.chat) state.chatMessages = data.chat;
@@ -1349,7 +1358,12 @@ function joinRoom() {
 }
 
 function initRoom() {
-  document.getElementById('modal').style.display = 'none';
+  // Hide modal
+  const modal = document.getElementById('modal');
+  modal.style.display = 'none';
+  modal.style.visibility = 'hidden';
+
+  // Update UI
   document.getElementById('room-id').value = state.roomId;
   document.getElementById('status-user').textContent = state.userName;
   document.getElementById('status-room').textContent = state.roomId;
@@ -1359,7 +1373,9 @@ function initRoom() {
   setActiveFile(state.activeFile);
   renderChatHistory();
   startSync();
-  showToast(`Room ${state.roomId} — share this ID to collaborate!`);
+
+  // Delay toast so DOM settles first
+  setTimeout(() => showToast(`✅ Room ${state.roomId} ready — share this ID!`), 300);
 }
 
 function leaveRoom() {
